@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WiFi Cognitive Impact Study</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* General Page Style */
+        body {
+            font-family: Palatino, sans-serif;
+            background-color: #f9f9f9;
+            color: #333;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Header and Navigation */
+        header {
+            padding: 20px;
+            background: #00AFFF;
+            color: white;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h1, h2 {
+            animation: fadeIn 1.5s ease-in-out;
+        }
+
+        nav button {
+            background: white;
+            border: none;
+            padding: 10px 15px;
+            margin: 5px;
+            border-radius: 5px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        nav button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .content {
+            display: none;
+            padding: 20px;
+        }
+
+        .active {
+            display: block;
+        }
+
+        /* Test Section Styles */
+        #reaction-area {
+            width: 200px;
+            height: 200px;
+            background-color: lightgray;
+            margin: 20px auto;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: background-color 0.3s ease;
+        }
+
+        #reaction-area:hover {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Confetti and "X" Effects */
+        .confetti, .x-symbol {
+            position: absolute;
+            animation: fall 1.5s ease-out;
+            font-size: 20px;
+            color: green;
+            opacity: 0.9;
+        }
+
+        .x-symbol {
+            color: red;
+        }
+
+        @keyframes fadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+
+        @keyframes fall {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(100px); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>WiFi Cognitive Impact Study</h1>
+    <nav>
+        <button onclick="showSection('home')">Home</button>
+        <button onclick="showSection('memory-test')">Memory Test</button>
+        <button onclick="showSection('reaction-test')">Reaction Test</button>
+        <button onclick="showSection('results')">Results & Graphs</button>
+    </nav>
+</header>
+
+<div id="home" class="content active">
+    <h2>Welcome</h2>
+    <p>This study explores how WiFi impacts cognitive function. Take our tests to monitor memory and reaction times over time. Please enter your WiFi strength before starting any test.</p>
+</div>
+
+<div id="memory-test" class="content">
+    <h2>Memory Test</h2>
+    <input id="wifiStrengthMemory" type="number" placeholder="Enter WiFi Strength (dBm)">
+    <button onclick="runMemoryTest()">Start Memory Test</button>
+    <p id="memory-test-result"></p>
+</div>
+
+<div id="reaction-test" class="content">
+    <h2>Reaction Test</h2>
+    <input id="wifiStrengthReaction" type="number" placeholder="Enter WiFi Strength (dBm)">
+    <button onclick="startReactionTest()">Start Reaction Test</button>
+    <p id="reaction-test-instructions">Wait for the screen to change color, then click as fast as you can!</p>
+    <div id="reaction-area"></div>
+    <p id="reaction-test-result"></p>
+</div>
+
+<div id="results" class="content">
+    <h2>Results & Graphs</h2>
+    <div id="resultsTable"></div>
+    <div>
+        <h3>Memory Test Scores vs WiFi Strength</h3>
+        <canvas id="memoryChart" width="400" height="200"></canvas>
+    </div>
+    <div>
+        <h3>Reaction Time vs WiFi Strength</h3>
+        <canvas id="reactionChart" width="400" height="200"></canvas>
+    </div>
+    <button onclick="resetGraphs()">Reset Graphs</button>
+</div>
+
+<footer>
+    <p>&copy; 2024 WiFi Cognitive Impact Study | Created by Yug Umasudhan</p>
+    <p><a href="mailto:yugumasudhan@gmail.com" style="color: #00AFFF; text-decoration: none;">Contact Us</a></p>
+</footer>
+
+<script>
+    let memoryData = [], reactionData = [];
+    let previousWifiStrength = null, cumulativeMemoryScore = 0;
+    let memoryChart, reactionChart;
+
+    function showSection(sectionId) {
+        document.querySelectorAll('.content').forEach(section => section.classList.remove('active'));
+        document.getElementById(sectionId).classList.add('active');
+    }
+
+    function validateWifiStrength(inputId) {
+        const wifiStrength = document.getElementById(inputId).value;
+        if (!wifiStrength) {
+            alert("Please enter WiFi strength before starting the test.");
+            return null;
+        }
+        return parseInt(wifiStrength);
+    }
+
+    function runMemoryTest() {
+        const wifiStrength = validateWifiStrength("wifiStrengthMemory");
+        if (wifiStrength === null) return;
+
+        const numbers = Array.from({ length: 5 }, () => Math.floor(Math.random() * 100));
+        alert("Memorize this sequence: " + numbers.join(", "));
+        const answer = prompt("Enter the sequence:");
+
+        const userSequence = answer.split(",").map(num => num.trim());
+        let correctCount = numbers.filter((num, i) => num == userSequence[i]).length;
+        let score = correctCount === 5 ? 1 : correctCount * 0.2;
+
+        cumulativeMemoryScore = (wifiStrength === previousWifiStrength) ? cumulativeMemoryScore + score : score;
+        memoryData.push({ wifi: wifiStrength, score: cumulativeMemoryScore });
+        previousWifiStrength = wifiStrength;
+
+        document.getElementById("memory-test-result").textContent = "Memory Test Score: " + cumulativeMemoryScore.toFixed(2);
+        displayResults();
+    }
+
+    let reactionStart;
+    function startReactionTest() {
+        const wifiStrength = validateWifiStrength("wifiStrengthReaction");
+        if (wifiStrength === null) return;
+
+        document.getElementById("reaction-area").style.backgroundColor = "lightgray";
+        document.getElementById("reaction-test-result").textContent = "";
+        document.getElementById("reaction-area").removeEventListener("click", recordReaction);
+
+        setTimeout(() => {
+            document.getElementById("reaction-area").style.backgroundColor = "green";
+            reactionStart = Date.now();
+            document.getElementById("reaction-area").addEventListener("click", () => recordReaction(wifiStrength));
+        }, Math.random() * 2000 + 1000);
+    }
+
+    function recordReaction(wifiStrength) {
+        const reactionTime = Date.now() - reactionStart;
+        reactionData.push({ wifi: wifiStrength, score: reactionTime });
+        document.getElementById("reaction-test-result").textContent = "Reaction Time: " + reactionTime + " ms";
+        displayResults();
+    }
+
+    function displayResults() {
+        let tableHTML = "<table><tr><th>WiFi Strength (dBm)</th><th>Test</th><th>Score</th></tr>";
+        memoryData.forEach(item => tableHTML += `<tr><td>${item.wifi}</td><td>Memory</td><td>${item.score}</td></tr>`);
+        reactionData.forEach(item => tableHTML += `<tr><td>${item.wifi}</td><td>Reaction</td><td>${item.score}</td></tr>`);
+        tableHTML += "</table>";
+        document.getElementById("resultsTable").innerHTML = tableHTML;
+        generateGraphs();
+    }
+
+    function generateGraphs() {
+        if (memoryChart) memoryChart.destroy();
+        if (reactionChart) reactionChart.destroy();
+
+        memoryChart = new Chart(document.getElementById("memoryChart").getContext("2d"), {
+            type: "line",
+            data: {
+                labels: memoryData.map(item => item.wifi),
+                datasets: [{ label: "Memory Test Score", data: memoryData.map(item => item.score), borderColor: "rgba(75, 192, 192, 1)", fill: false }]
+            }
+        });
+
+        reactionChart = new Chart(document.getElementById("reactionChart").getContext("2d"), {
+            type: "line",
+            data: {
+                labels: reactionData.map(item => item.wifi),
+                datasets: [{ label: "Reaction Time (ms)", data: reactionData.map(item => item.score), borderColor: "rgba(153, 102, 255, 1)", fill: false }]
+            }
+        });
+    }
+
+    function resetGraphs() {
+        memoryData = [];
+        reactionData = [];
+        document.getElementById("resultsTable").innerHTML = "";
+        generateGraphs();
+    }
+</script>
+
+</body>
+</html>
+
